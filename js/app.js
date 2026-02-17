@@ -5,10 +5,10 @@
 // ========================================
 const APP_CONFIG = {
     // Dashboard background image (GitHub hosted)
-    BACKGROUND_IMAGE: '',  // <-- Put your GitHub image URL here
+    BACKGROUND_IMAGE: 'https://dkyfjllrltquwndlitru.supabase.co/storage/v1/object/public/Video/20260218_020724.jpg',  // <-- Put your GitHub image URL here
 
     // Website logo/icon (GitHub hosted)
-    LOGO_IMAGE: '',        // <-- Put your GitHub image URL here
+    LOGO_IMAGE: 'https://dkyfjllrltquwndlitru.supabase.co/storage/v1/object/public/Video/20260218_020459.png',        // <-- Put your GitHub image URL here
 };
 
 // ========================================
