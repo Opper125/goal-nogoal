@@ -14,6 +14,7 @@ const APP_CONFIG = {
 // ========================================
 // APP INITIALIZATION
 // ========================================
+/* ===== MAIN APP INITIALIZATION ===== */
 (async function initApp() {
     try {
         // Set images
@@ -24,29 +25,22 @@ const APP_CONFIG = {
             setLogoImage(APP_CONFIG.LOGO_IMAGE);
         }
 
-        // Check device ban first
-        const deviceBan = checkDeviceBan();
-        if (deviceBan.banned) {
-            handleBan(deviceBan.reason);
-            hideLoadingScreen();
-            return;
-        }
-
-        // Check server ban
-        const serverBanned = await checkServerBan();
-        if (serverBanned) {
-            hideLoadingScreen();
-            return;
-        }
-
-        // Check existing session
+        // Check existing session first
         const savedUser = getSession();
+
         if (savedUser && savedUser.id) {
-            // Verify session is still valid
+            // Have a session - check server ban status (this also clears local ban if unbanned)
+            const serverBanned = await checkServerBan();
+
+            if (serverBanned) {
+                hideLoadingScreen();
+                return;
+            }
+
+            // Not banned - verify session is still valid
             const result = await apiGet('auth', 'get-user', { userId: savedUser.id });
 
             if (result.success && result.user) {
-                // Session valid, go to dashboard
                 hideLoadingScreen();
                 showDashboard(result.user);
                 return;
@@ -55,17 +49,33 @@ const APP_CONFIG = {
                 hideLoadingScreen();
                 return;
             } else {
-                // Session invalid
                 clearSession();
+                clearBanData();
+            }
+        } else {
+            // No session - check device ban but also verify with server
+            const deviceBan = checkDeviceBan();
+
+            if (deviceBan.banned) {
+                // Device thinks it's banned - verify with server
+                const serverBanned = await checkServerBan();
+
+                if (serverBanned) {
+                    hideLoadingScreen();
+                    return;
+                }
+                // Server says not banned - clearBanData already called in checkServerBan
             }
         }
 
-        // No valid session, show auth screen
+        // No valid session and not banned, show auth screen
         hideLoadingScreen();
         showScreen('authScreen');
 
     } catch (err) {
         console.error('App init error:', err);
+        // On error, clear ban data and show auth
+        clearBanData();
         hideLoadingScreen();
         showScreen('authScreen');
     }
@@ -83,9 +93,7 @@ function hideLoadingScreen() {
     }
 }
 
-// ========================================
-// GLOBAL ERROR HANDLER
-// ========================================
+// Global error handler
 window.onerror = function (msg, url, line, col, error) {
     console.error('Global error:', msg, url, line);
     return false;
@@ -95,17 +103,7 @@ window.addEventListener('unhandledrejection', function (event) {
     console.error('Unhandled promise:', event.reason);
 });
 
-// ========================================
-// SERVICE WORKER (optional for PWA)
-// ========================================
-if ('serviceWorker' in navigator) {
-    // Can register service worker for offline support
-    // navigator.serviceWorker.register('/sw.js');
-}
-
-// ========================================
-// PREVENT ZOOM ON MOBILE
-// ========================================
+// Prevent zoom on mobile
 document.addEventListener('gesturestart', function (e) {
     e.preventDefault();
 });
