@@ -2,6 +2,7 @@
 
 let selectedBetChoice = null;
 let isPlaying = false;
+let pendingGameResult = null;
 
 // Select bet choice
 function selectBet(choice) {
@@ -25,7 +26,6 @@ function selectBet(choice) {
     updateBetLimits();
     updateQuickBets();
 
-    // Scroll to bet section
     betSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -92,12 +92,22 @@ async function playGame() {
         return;
     }
 
-    // Start playing
+    // ===== START PLAYING =====
     isPlaying = true;
+    pendingGameResult = null;
+
+    // Stop polling during game to prevent conflicts
+    stopPolling();
 
     // Hide game buttons and bet section
     document.getElementById('gameButtons').style.display = 'none';
     document.getElementById('betSection').style.display = 'none';
+
+    // Step 1: Immediately deduct balance visually
+    const oldBalance = currentUser.balance[currentCurrency];
+    currentUser.balance[currentCurrency] = oldBalance - betAmount;
+    saveSession(currentUser);
+    updateBalanceDisplay();
 
     // Show video container with loading
     const videoContainer = document.getElementById('videoContainer');
@@ -105,17 +115,11 @@ async function playGame() {
     videoContainer.innerHTML = `
         <div class="game-loading">
             <div class="spinner"></div>
-            <p>Placing bet...</p>
+            <p>Placing bet... ${formatNumber(betAmount)} ${currentCurrency}</p>
         </div>
     `;
 
-    // Deduct balance immediately (visual)
-    const oldBalance = currentUser.balance[currentCurrency];
-    currentUser.balance[currentCurrency] = oldBalance - betAmount;
-    saveSession(currentUser);
-    updateBalanceDisplay();
-
-    // Call API
+    // Step 2: Call API to place bet (server deducts and determines result)
     const result = await apiCall('game', 'play', 'POST', {
         userId: userId,
         betChoice: selectedBetChoice,
@@ -124,152 +128,149 @@ async function playGame() {
     });
 
     if (!result.success) {
-        // Restore balance on error
+        // API failed - restore balance
         currentUser.balance[currentCurrency] = oldBalance;
         saveSession(currentUser);
         updateBalanceDisplay();
 
-        showToast(result.error || 'Game error', 'error');
+        showToast(result.error || 'Game error. Your balance has been restored.', 'error');
         resetGameUI();
+        startPolling();
         return;
     }
 
-    // Play video
+    // Step 3: Store result but DON'T settle yet - wait for video to finish
+    pendingGameResult = result;
+
+    // Step 4: Play video - settlement happens AFTER video ends
     if (result.video && result.video.url) {
-        await playVideoResult(result);
+        playVideoResult(result);
     } else {
-        // No video, show result directly
-        await showResultDirectly(result);
+        // No video available - show result directly
+        showResultDirectly(result);
     }
 }
 
-// Play video result
+// Play video result - settlement happens ONLY after video ends
 function playVideoResult(result) {
-    return new Promise((resolve) => {
-        const videoContainer = document.getElementById('videoContainer');
+    const videoContainer = document.getElementById('videoContainer');
 
-        videoContainer.innerHTML = `
-            <video id="gameVideo" playsinline webkit-playsinline preload="auto"></video>
-            <div id="videoOverlay" class="video-overlay" style="display:none;">
-                <div class="result-display" id="resultDisplay"></div>
-            </div>
-        `;
+    videoContainer.innerHTML = `
+        <video id="gameVideo" playsinline webkit-playsinline preload="auto"></video>
+        <div id="videoOverlay" class="video-overlay" style="display:none;">
+            <div class="result-display" id="resultDisplay"></div>
+        </div>
+    `;
 
-        const video = document.getElementById('gameVideo');
-        const overlay = document.getElementById('videoOverlay');
+    const video = document.getElementById('gameVideo');
+    const overlay = document.getElementById('videoOverlay');
 
-        video.src = result.video.url;
-        video.load();
+    // Pre-load video
+    video.src = result.video.url;
+    video.load();
 
-        // Handle video loaded
-        video.oncanplay = function () {
-            video.play().catch(err => {
-                console.error('Video play error:', err);
-                // If autoplay fails, show result directly
-                showGameResult(result, overlay);
-                resolve();
-            });
-        };
+    let videoEnded = false;
+    let hasSettled = false;
 
-        // Handle video ended
-        video.onended = function () {
-            showGameResult(result, overlay);
-            resolve();
-        };
+    function settleGame() {
+        if (hasSettled) return;
+        hasSettled = true;
 
-        // Handle video error
-        video.onerror = function () {
-            console.error('Video load error');
-            showResultDirectly(result).then(resolve);
-        };
+        // NOW settle the balance after video
+        settleGameResult(result);
 
-        // Timeout fallback (30 seconds max)
-        setTimeout(() => {
-            if (isPlaying) {
-                video.pause();
-                showGameResult(result, overlay);
-                resolve();
-            }
-        }, 30000);
-    });
+        // Show result overlay
+        overlay.style.display = 'flex';
+        showGameResultContent(result, document.getElementById('resultDisplay'));
+    }
+
+    // When video can play
+    video.oncanplay = function () {
+        video.play().catch(function(err) {
+            console.error('Video autoplay failed:', err);
+            // Autoplay blocked - settle immediately
+            settleGame();
+        });
+    };
+
+    // When video ends naturally
+    video.onended = function () {
+        videoEnded = true;
+        settleGame();
+    };
+
+    // Video error - settle immediately
+    video.onerror = function () {
+        console.error('Video load error');
+        settleGame();
+    };
+
+    // Safety timeout - 25 seconds max for video
+    setTimeout(function() {
+        if (!hasSettled) {
+            try { video.pause(); } catch(e) {}
+            settleGame();
+        }
+    }, 25000);
 }
 
 // Show result directly (no video)
 function showResultDirectly(result) {
-    return new Promise((resolve) => {
-        const videoContainer = document.getElementById('videoContainer');
-        videoContainer.innerHTML = `
-            <div style="min-height:250px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);border-radius:20px;">
-                <div class="result-display" id="resultDisplay"></div>
-            </div>
-        `;
+    const videoContainer = document.getElementById('videoContainer');
+    videoContainer.innerHTML = `
+        <div style="min-height:250px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);border-radius:20px;">
+            <div class="result-display" id="resultDisplay"></div>
+        </div>
+    `;
 
-        const display = document.getElementById('resultDisplay');
-        showGameResultContent(result, display);
+    // Settle the game result
+    settleGameResult(result);
 
-        setTimeout(resolve, 500);
-    });
-}
-
-// Show game result overlay
-function showGameResult(result, overlay) {
-    overlay.style.display = 'flex';
+    // Show result content
     const display = document.getElementById('resultDisplay');
     showGameResultContent(result, display);
 }
 
-// Render game result content
-function showGameResultContent(result, display) {
+// ===== SETTLE GAME RESULT - Only called after video finishes =====
+function settleGameResult(result) {
     const game = result.game;
     const won = game.won;
-    const betAmount = game.betAmount;
     const currency = game.currency;
 
-    display.className = `result-display ${won ? 'win' : 'lose'}`;
-
     if (won) {
-        const winAmount = game.winAmount;
-        display.innerHTML = `
-            <div class="result-icon"><i class="fas fa-trophy"></i></div>
-            <div class="result-text">YOU WIN!</div>
-            <div class="result-amount">+${formatNumber(winAmount)} ${currency}</div>
-            <div style="font-size:13px;color:#888;margin-bottom:15px;">
-                Bet: ${game.betChoice.toUpperCase()} | Result: ${game.result.toUpperCase()}
-            </div>
-            <button class="btn-continue" onclick="continueAfterGame()">CONTINUE</button>
-        `;
+        // WIN: Add original bet + profit back to balance
+        const winAmount = game.winAmount; // This is betAmount * 2
+        currentUser.balance[currency] = result.newBalance;
+        saveSession(currentUser);
 
-        // Update balance with animation
-        updateBalanceAnimated(result.newBalance, currency);
-
-        showToast(`🏆 You won ${formatNumber(winAmount)} ${currency}!`, 'success', 4000);
-    } else {
-        display.innerHTML = `
-            <div class="result-icon"><i class="fas fa-times-circle"></i></div>
-            <div class="result-text">YOU LOSE</div>
-            <div class="result-amount">-${formatNumber(betAmount)} ${currency}</div>
-            <div style="font-size:13px;color:#888;margin-bottom:15px;">
-                Bet: ${game.betChoice.toUpperCase()} | Result: ${game.result.toUpperCase()}
-            </div>
-            <button class="btn-continue" onclick="continueAfterGame()">CONTINUE</button>
-        `;
-
-        // Update balance
-        if (currentUser) {
-            currentUser.balance[currency] = result.newBalance;
-            saveSession(currentUser);
+        // Animate balance increase
+        const amountEl = document.getElementById('balanceAmount');
+        if (amountEl && currency === currentCurrency) {
+            const currentDisplayBalance = currentUser.balance[currency] - winAmount;
+            showMoneyRain(currency);
+            animateBalance(amountEl, currentDisplayBalance, result.newBalance, 2000);
+        } else {
             updateBalanceDisplay();
         }
 
-        showToast(`You lost ${formatNumber(betAmount)} ${currency}`, 'error', 4000);
+        showToast(`You won ${formatNumber(game.winAmount)} ${currency}!`, 'success', 4000);
+    } else {
+        // LOSE: Balance already deducted, just sync with server
+        currentUser.balance[currency] = result.newBalance;
+        saveSession(currentUser);
+        updateBalanceDisplay();
+
+        showToast(`You lost ${formatNumber(game.betAmount)} ${currency}`, 'error', 4000);
     }
 
-    // Update local user data
-    if (currentUser && result.balances) {
+    // Update all balances from server
+    if (result.balances) {
         currentUser.balance = result.balances;
         saveSession(currentUser);
+        updateBalanceDisplay();
     }
 
+    // Update VIP level
     if (result.vipLevel && currentUser) {
         currentUser.vipLevel = result.vipLevel;
         saveSession(currentUser);
@@ -280,13 +281,47 @@ function showGameResultContent(result, display) {
     if (result.vvipKingReward) {
         setTimeout(() => {
             showVvipKingRewardNotification();
-        }, 2000);
+        }, 3000);
+    }
+}
+
+// Render game result content (visual only - no balance changes here)
+function showGameResultContent(result, display) {
+    const game = result.game;
+    const won = game.won;
+    const betAmount = game.betAmount;
+    const currency = game.currency;
+
+    display.className = `result-display ${won ? 'win' : 'lose'}`;
+
+    if (won) {
+        display.innerHTML = `
+            <div class="result-icon"><i class="fas fa-trophy"></i></div>
+            <div class="result-text">YOU WIN!</div>
+            <div class="result-amount">+${formatNumber(game.winAmount)} ${currency}</div>
+            <div style="font-size:13px;color:#888;margin-bottom:15px;">
+                Bet: ${game.betChoice.toUpperCase()} | Result: ${game.result.toUpperCase()}
+            </div>
+            <button class="btn-continue" onclick="continueAfterGame()">CONTINUE</button>
+        `;
+    } else {
+        display.innerHTML = `
+            <div class="result-icon"><i class="fas fa-times-circle"></i></div>
+            <div class="result-text">YOU LOSE</div>
+            <div class="result-amount">-${formatNumber(betAmount)} ${currency}</div>
+            <div style="font-size:13px;color:#888;margin-bottom:15px;">
+                Bet: ${game.betChoice.toUpperCase()} | Result: ${game.result.toUpperCase()}
+            </div>
+            <button class="btn-continue" onclick="continueAfterGame()">CONTINUE</button>
+        `;
     }
 }
 
 // Continue after game
 function continueAfterGame() {
+    pendingGameResult = null;
     resetGameUI();
+    startPolling(); // Resume polling after game
 }
 
 // Reset game UI
@@ -398,7 +433,7 @@ function showVipInfo() {
 
 // VVIP King reward notification
 function showVvipKingRewardNotification() {
-    showToast('👑 Congratulations! You reached VVIP KING! Claim your reward now!', 'success', 6000);
+    showToast('Congratulations! You reached VVIP KING! Claim your reward now!', 'success', 6000);
     setTimeout(() => {
         openClaimReward();
     }, 1500);
@@ -440,7 +475,7 @@ function openClaimReward() {
         </div>
 
         <p style="color:#555;font-size:11px;text-align:center;margin-top:16px;">
-            <i class="fas fa-info-circle"></i> After claiming, you must place at least one bet with the minimum amount before withdrawing.
+            <i class="fas fa-info-circle"></i> After claiming, you must place at least one bet with the minimum amount before you can withdraw.
         </p>
     `;
 }
@@ -464,8 +499,8 @@ async function claimReward(currency) {
         showToast(result.message, 'success', 5000);
         closeModal('claimModal');
 
-        // Update balance
         if (currentUser) {
+            const oldBal = currentUser.balance[currency] || 0;
             currentUser.balance[currency] = result.newBalance;
             currentUser.pendingClaimBet = result.pendingClaimBet;
             if (!currentUser.claimedRewards) currentUser.claimedRewards = [];
@@ -474,9 +509,10 @@ async function claimReward(currency) {
 
             if (currency === currentCurrency) {
                 const amountEl = document.getElementById('balanceAmount');
-                const oldBal = currentUser.balance[currency] - (currency === 'MMK' ? 1000000 : currency === 'USD' ? 500 : 1000);
-                animateBalance(amountEl, oldBal, result.newBalance, 3000);
-                showMoneyRain(currency);
+                if (amountEl) {
+                    animateBalance(amountEl, oldBal, result.newBalance, 3000);
+                    showMoneyRain(currency);
+                }
             }
             updateBalanceDisplay();
         }
