@@ -1,6 +1,13 @@
 /* ===== UTILITIES ===== */
 
 const API_BASE = '/api';
+const API_TIMEOUT = 15000;
+const API_RETRY_COUNT = 2;
+const API_RETRY_DELAY = 1000;
+
+// Simple in-memory cache
+const apiCache = {};
+const CACHE_TTL = 3000; // 3 seconds cache
 
 // Device fingerprint
 function getDeviceId() {
@@ -12,18 +19,60 @@ function getDeviceId() {
     return deviceId;
 }
 
-// Get IP address
+// Get IP address with cache
+let cachedIP = null;
+let ipFetchTime = 0;
 async function getIPAddress() {
+    if (cachedIP && Date.now() - ipFetchTime < 300000) return cachedIP;
     try {
-        const res = await fetch('https://api.ipify.org?format=json');
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch('https://api.ipify.org?format=json', { signal: controller.signal });
+        clearTimeout(timeout);
         const data = await res.json();
+        cachedIP = data.ip;
+        ipFetchTime = Date.now();
         return data.ip;
     } catch (e) {
-        return 'unknown';
+        return cachedIP || 'unknown';
     }
 }
 
-// API call helper
+// Fetch with timeout
+function fetchWithTimeout(url, options, timeout = API_TIMEOUT) {
+    return new Promise((resolve, reject) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => {
+            controller.abort();
+            reject(new Error('Request timeout'));
+        }, timeout);
+
+        fetch(url, { ...options, signal: controller.signal })
+            .then(response => {
+                clearTimeout(timer);
+                resolve(response);
+            })
+            .catch(err => {
+                clearTimeout(timer);
+                reject(err);
+            });
+    });
+}
+
+// Retry wrapper
+async function fetchWithRetry(url, options, retries = API_RETRY_COUNT) {
+    for (let i = 0; i <= retries; i++) {
+        try {
+            const res = await fetchWithTimeout(url, options);
+            return res;
+        } catch (err) {
+            if (i === retries) throw err;
+            await new Promise(r => setTimeout(r, API_RETRY_DELAY * (i + 1)));
+        }
+    }
+}
+
+// API call helper with retry and timeout
 async function apiCall(endpoint, action, method = 'GET', body = null, headers = {}) {
     try {
         const url = `${API_BASE}/${endpoint}?action=${action}`;
@@ -37,28 +86,76 @@ async function apiCall(endpoint, action, method = 'GET', body = null, headers = 
         if (body && method !== 'GET') {
             options.body = JSON.stringify(body);
         }
-        const res = await fetch(url, options);
+
+        const res = await fetchWithRetry(url, options);
+
+        if (!res.ok) {
+            const text = await res.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                return { success: false, error: `Server error: ${res.status}` };
+            }
+        }
+
         const data = await res.json();
         return data;
     } catch (err) {
         console.error('API call error:', err);
-        return { success: false, error: 'Network error. Please try again.' };
+        if (err.message === 'Request timeout') {
+            return { success: false, error: 'Request timed out. Please try again.' };
+        }
+        return { success: false, error: 'Network error. Please check your connection.' };
     }
 }
 
-// API call with query params
-async function apiGet(endpoint, action, params = {}) {
+// API GET with cache support
+async function apiGet(endpoint, action, params = {}, useCache = false) {
+    let url = `${API_BASE}/${endpoint}?action=${action}`;
+    Object.keys(params).forEach(key => {
+        url += `&${key}=${encodeURIComponent(params[key])}`;
+    });
+
+    // Check cache
+    if (useCache && apiCache[url] && Date.now() - apiCache[url].time < CACHE_TTL) {
+        return apiCache[url].data;
+    }
+
     try {
-        let url = `${API_BASE}/${endpoint}?action=${action}`;
-        Object.keys(params).forEach(key => {
-            url += `&${key}=${encodeURIComponent(params[key])}`;
+        const res = await fetchWithRetry(url, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
         });
-        const res = await fetch(url);
+
+        if (!res.ok) {
+            const text = await res.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                return { success: false, error: `Server error: ${res.status}` };
+            }
+        }
+
         const data = await res.json();
+
+        // Store in cache
+        if (useCache) {
+            apiCache[url] = { data: data, time: Date.now() };
+        }
+
         return data;
     } catch (err) {
         console.error('API GET error:', err);
-        return { success: false, error: 'Network error' };
+
+        // Return cached data if available on error
+        if (apiCache[url]) {
+            return apiCache[url].data;
+        }
+
+        if (err.message === 'Request timeout') {
+            return { success: false, error: 'Request timed out.' };
+        }
+        return { success: false, error: 'Network error.' };
     }
 }
 
@@ -68,6 +165,11 @@ async function adminApiCall(action, method = 'GET', body = null) {
     return apiCall('admin', action, method, body, {
         'X-Telegram-User-Id': tgUserId
     });
+}
+
+// Clear cache
+function clearApiCache() {
+    Object.keys(apiCache).forEach(key => delete apiCache[key]);
 }
 
 // Toast notification
