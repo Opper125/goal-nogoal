@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GOAL OR NO GOAL</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/auth.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/game.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+    <!-- BAN SCREEN -->
+    <div id="banScreen" class="screen ban-screen" style="display:none;">
+        <div class="ban-container">
+            <div class="ban-icon"><i class="fas fa-ban"></i></div>
+            <h1>ACCOUNT BANNED</h1>
+            <p id="banReason">Your account has been suspended due to policy violation.</p>
+            <p class="ban-contact">Contact admin for support</p>
+        </div>
+    </div>
+
+    <!-- LOADING SCREEN -->
+    <div id="loadingScreen" class="screen loading-screen">
+        <div class="loader-container">
+            <div class="football-loader">
+                <div class="ball"></div>
+            </div>
+            <h2 class="glow-text">GOAL OR NO GOAL</h2>
+            <p class="loading-text">Loading...</p>
+        </div>
+    </div>
+
+    <!-- AUTH SCREEN -->
+    <div id="authScreen" class="screen auth-screen" style="display:none;">
+        <div class="auth-bg-overlay"></div>
+        <div class="auth-container">
+            <div class="auth-logo">
+                <div class="logo-circle">
+                    <img id="authLogoImg" src="" alt="Logo" onerror="this.style.display='none'">
+                    <span class="logo-fallback">⚽</span>
+                </div>
+                <h1 class="auth-title glow-text">GOAL OR NO GOAL</h1>
+            </div>
+
+            <!-- LOGIN TAB -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuthTab('login')">LOGIN</button>
+                <button class="auth-tab" onclick="switchAuthTab('register')">REGISTER</button>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <div id="loginForm" class="auth-form">
+                <div class="input-group">
+                    <div class="input-icon"><i class="fas fa-phone"></i></div>
+                    <input type="tel" id="loginPhone" placeholder="Phone Number" autocomplete="tel">
+                </div>
+                <div class="input-group">
+                    <div class="input-icon"><i class="fas fa-lock"></i></div>
+                    <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+                    <button class="toggle-pass" onclick="togglePassword('loginPassword')"><i class="fas fa-eye"></i></button>
+                </div>
+                <button class="btn-primary btn-glow" onclick="handleLogin()">
+                    <span>LOGIN</span>
+                    <div class="btn-shine"></div>
+                </button>
+            </div>
+
+            <!-- REGISTER FORM -->
+            <div id="registerForm" class="auth-form" style="display:none;">
+                <div class="input-group">
+                    <div class="input-icon"><i class="fas fa-phone"></i></div>
+                    <input type="tel" id="regPhone" placeholder="Phone Number" oninput="checkPhoneAvailability()">
+                    <span id="phoneStatus" class="field-status"></span>
+                </div>
+                <div class="input-group">
+                    <div class="input-icon"><i class="fas fa-envelope"></i></div>
+                    <input type="email" id="regEmail" placeholder="Gmail Address" oninput="checkEmailAvailability()">
+                    <span id="emailStatus" class="field-status"></span>
+                </div>
+                <div class="input-group">
+                    <div class="input-icon"><i class="fas fa-user"></i></div>
+                    <input type="text" id="regUsername" placeholder="Username (no spaces)" oninput="checkUsernameAvailability()">
+                    <span id="usernameStatus" class="field-status"></span>
+                </div>
+                <div class="input-group">
+                    <div class="input-icon"><i class="fas fa-lock"></i></div>
+                    <input type="password" id="regPassword" placeholder="Password" oninput="checkPasswordStrength()">
+                    <button class="toggle-pass" onclick="togglePassword('regPassword')"><i class="fas fa-eye"></i></button>
+                    <span id="passwordStatus" class="field-status"></span>
+                </div>
+                <div id="passwordRules" class="password-rules">
+                    <div class="rule" id="ruleLength"><i class="fas fa-circle"></i> At least 6 characters</div>
+                    <div class="rule" id="ruleUpper"><i class="fas fa-circle"></i> One uppercase letter</div>
+                    <div class="rule" id="ruleNumber"><i class="fas fa-circle"></i> One number</div>
+                    <div class="rule" id="ruleSpecial"><i class="fas fa-circle"></i> One special character (@#$&%)</div>
+                </div>
+                <button class="btn-primary btn-glow" onclick="handleRegister()" id="registerBtn">
+                    <span>CREATE ACCOUNT</span>
+                    <div class="btn-shine"></div>
+                </button>
+            </div>
+
+            <div id="authMessage" class="auth-message"></div>
+        </div>
+    </div>
+
+    <!-- DASHBOARD SCREEN -->
+    <div id="dashboardScreen" class="screen dashboard-screen" style="display:none;">
+        <!-- Background Image -->
+        <div class="dashboard-bg" id="dashboardBg"></div>
+
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="bar-left">
+                <div class="balance-display" onclick="openTopup()">
+                    <div class="balance-currency" id="balanceCurrencyLabel">MMK</div>
+                    <div class="balance-amount" id="balanceAmount">0</div>
+                    <button class="btn-topup"><i class="fas fa-plus"></i></button>
+                </div>
+            </div>
+            <div class="bar-center">
+                <div class="bar-logo">
+                    <img id="barLogoImg" src="" alt="Logo" onerror="this.style.display='none'">
+                </div>
+            </div>
+            <div class="bar-right">
+                <div class="user-info">
+                    <span class="username-display" id="usernameDisplay">User</span>
+                    <span class="online-status"><span class="online-dot"></span> Online</span>
+                </div>
+                <div class="vip-badge" id="vipBadge">VIP</div>
+            </div>
+        </div>
+
+        <!-- Currency Selector -->
+        <div class="currency-selector">
+            <button class="currency-btn active" data-currency="MMK" onclick="switchCurrency('MMK')">
+                <span class="curr-flag">🇲🇲</span> MMK
+            </button>
+            <button class="currency-btn" data-currency="USD" onclick="switchCurrency('USD')">
+                <span class="curr-flag">🇺🇸</span> USD
+            </button>
+            <button class="currency-btn" data-currency="CNY" onclick="switchCurrency('CNY')">
+                <span class="curr-flag">🇨🇳</span> CNY
+            </button>
+        </div>
+
+        <!-- Game Area -->
+        <div class="game-area">
+            <!-- Video Player -->
+            <div id="videoContainer" class="video-container" style="display:none;">
+                <video id="gameVideo" playsinline webkit-playsinline></video>
+                <div id="videoOverlay" class="video-overlay" style="display:none;">
+                    <div class="result-display" id="resultDisplay"></div>
+                </div>
+            </div>
+
+            <!-- Game Buttons -->
+            <div class="game-buttons" id="gameButtons">
+                <button class="game-btn goal-btn" id="goalBtn" onclick="selectBet('goal')">
+                    <div class="btn-inner">
+                        <div class="btn-icon"><i class="fas fa-futbol"></i></div>
+                        <span>GOAL</span>
+                    </div>
+                    <div class="btn-edge"></div>
+                </button>
+                <button class="game-btn nogoal-btn" id="nogoalBtn" onclick="selectBet('nogoal')">
+                    <div class="btn-inner">
+                        <div class="btn-icon"><i class="fas fa-hand"></i></div>
+                        <span>NO GOAL</span>
+                    </div>
+                    <div class="btn-edge"></div>
+                </button>
+            </div>
+
+            <!-- Bet Input -->
+            <div id="betSection" class="bet-section" style="display:none;">
+                <div class="bet-header">
+                    <span class="bet-choice" id="betChoiceLabel">GOAL</span>
+                    <span class="bet-currency" id="betCurrencyLabel">MMK</span>
+                </div>
+                <div class="bet-input-group">
+                    <input type="number" id="betAmountInput" placeholder="Enter bet amount" class="bet-input">
+                    <div class="bet-limits" id="betLimits">Min: 1,000 - Max: 24,681,098</div>
+                </div>
+                <div class="quick-bets">
+                    <button class="quick-bet" onclick="quickBet(1000)">1K</button>
+                    <button class="quick-bet" onclick="quickBet(5000)">5K</button>
+                    <button class="quick-bet" onclick="quickBet(10000)">10K</button>
+                    <button class="quick-bet" onclick="quickBet(50000)">50K</button>
+                    <button class="quick-bet" onclick="quickBet(100000)">100K</button>
+                    <button class="quick-bet" onclick="quickBetAll()">ALL IN</button>
+                </div>
+                <button class="btn-play btn-glow" onclick="playGame()">
+                    <i class="fas fa-play"></i> PLAY NOW
+                    <div class="btn-shine"></div>
+                </button>
+                <button class="btn-cancel" onclick="cancelBet()">CANCEL</button>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <button class="nav-btn" onclick="openTopup()">
+                <i class="fas fa-wallet"></i>
+                <span>Topup</span>
+            </button>
+            <button class="nav-btn" onclick="openWithdraw()">
+                <i class="fas fa-money-bill-transfer"></i>
+                <span>Withdraw</span>
+            </button>
+            <button class="nav-btn active" onclick="closeAllModals()">
+                <i class="fas fa-gamepad"></i>
+                <span>Game</span>
+            </button>
+            <button class="nav-btn" onclick="openContacts()">
+                <i class="fas fa-headset"></i>
+                <span>Contact</span>
+            </button>
+            <button class="nav-btn" onclick="openHistory()">
+                <i class="fas fa-book"></i>
+                <span>History</span>
+            </button>
+        </div>
+
+        <!-- MODALS -->
+        <!-- Topup Modal -->
+        <div id="topupModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-wallet"></i> DEPOSIT</h3>
+                    <button class="modal-close" onclick="closeModal('topupModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="balance-cards" id="topupBalanceCards"></div>
+                    <div id="topupCurrencySelect" class="currency-select-section">
+                        <p class="section-label">Select Balance to Deposit</p>
+                        <div class="currency-options">
+                            <button class="curr-option" onclick="selectTopupCurrency('MMK')">MMK</button>
+                            <button class="curr-option" onclick="selectTopupCurrency('USD')">USD</button>
+                            <button class="curr-option" onclick="selectTopupCurrency('CNY')">CNY</button>
+                        </div>
+                    </div>
+                    <div id="topupAmountSection" style="display:none;">
+                        <p class="section-label">Enter Amount (<span id="topupCurrLabel">MMK</span>)</p>
+                        <input type="number" id="topupAmount" placeholder="Amount" class="modal-input">
+                        <div class="limit-info" id="topupLimitInfo">Min: 10,000 - Max: 1,000,000</div>
+                        <div id="paymentMethodsSection" style="display:none;">
+                            <p class="section-label">Select Payment Method</p>
+                            <div id="paymentMethodsList" class="payment-methods-list"></div>
+                        </div>
+                        <div id="paymentDetailSection" style="display:none;">
+                            <div class="payment-detail-card" id="paymentDetailCard"></div>
+                            <div class="input-group" style="margin-top:15px;">
+                                <input type="text" id="transactionIdInput" placeholder="Last 6 digits of Transaction ID" maxlength="6" class="modal-input">
+                            </div>
+                            <button class="btn-primary btn-glow" onclick="submitDeposit()" style="margin-top:15px;">
+                                <span>SUBMIT DEPOSIT REQUEST</span>
+                                <div class="btn-shine"></div>
+                            </button>
+                        </div>
+                        <button class="btn-next" onclick="loadPaymentMethods()" id="topupNextBtn">
+                            NEXT <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Withdraw Modal -->
+        <div id="withdrawModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-money-bill-transfer"></i> WITHDRAW</h3>
+                    <button class="modal-close" onclick="closeModal('withdrawModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="balance-cards" id="withdrawBalanceCards"></div>
+                    <div id="withdrawCurrencySelect">
+                        <p class="section-label">Select Balance to Withdraw</p>
+                        <div class="currency-options">
+                            <button class="curr-option" onclick="selectWithdrawCurrency('MMK')">MMK</button>
+                            <button class="curr-option" onclick="selectWithdrawCurrency('USD')">USD</button>
+                            <button class="curr-option" onclick="selectWithdrawCurrency('CNY')">CNY</button>
+                        </div>
+                    </div>
+                    <div id="withdrawAmountSection" style="display:none;">
+                        <div id="turnoverInfo" class="turnover-info"></div>
+                        <div id="withdrawEligibility" class="eligibility-info"></div>
+                        <p class="section-label">Enter Amount (<span id="withdrawCurrLabel">MMK</span>)</p>
+                        <div class="withdraw-input-row">
+                            <input type="number" id="withdrawAmount" placeholder="Amount" class="modal-input">
+                            <button class="btn-max" onclick="setMaxWithdraw()">MAX</button>
+                        </div>
+                        <div class="limit-info" id="withdrawLimitInfo">Min: 10,000 - Max: 1,000,000</div>
+                        <button class="btn-primary btn-glow" onclick="submitWithdraw()" id="withdrawSubmitBtn">
+                            <span>SUBMIT WITHDRAWAL</span>
+                            <div class="btn-shine"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Modal -->
+        <div id="historyModal" class="modal" style="display:none;">
+            <div class="modal-content modal-full">
+                <div class="modal-header">
+                    <h3><i class="fas fa-book"></i> HISTORY</h3>
+                    <button class="modal-close" onclick="closeModal('historyModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="history-tabs">
+                        <button class="history-tab active" onclick="switchHistoryTab('deposits')">Deposits</button>
+                        <button class="history-tab" onclick="switchHistoryTab('withdrawals')">Withdrawals</button>
+                        <button class="history-tab" onclick="switchHistoryTab('games')">Games</button>
+                    </div>
+                    <div id="historyContent" class="history-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contacts Modal -->
+        <div id="contactsModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-headset"></i> CONTACT US</h3>
+                    <button class="modal-close" onclick="closeModal('contactsModal')">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="contactsList" class="contacts-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIP Info Modal -->
+        <div id="vipModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-crown"></i> VIP STATUS</h3>
+                    <button class="modal-close" onclick="closeModal('vipModal')">&times;</button>
+                </div>
+                <div class="modal-body" id="vipModalBody"></div>
+            </div>
+        </div>
+
+        <!-- Claim Reward Modal -->
+        <div id="claimModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-gift"></i> VVIP KING REWARD</h3>
+                    <button class="modal-close" onclick="closeModal('claimModal')">&times;</button>
+                </div>
+                <div class="modal-body" id="claimModalBody"></div>
+            </div>
+        </div>
+
+        <!-- Message/Notification Toast -->
+        <div id="toastContainer" class="toast-container"></div>
+
+        <!-- Balance Animation Overlay -->
+        <div id="balanceAnimation" class="balance-animation" style="display:none;">
+            <div class="money-rain" id="moneyRain"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/utils.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/balance.js"></script>
+    <script src="/js/deposit.js"></script>
+    <script src="/js/withdraw.js"></script>
+    <script src="/js/game.js"></script>
+    <script src="/js/contacts.js"></script>
+    <script src="/js/dashboard.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
