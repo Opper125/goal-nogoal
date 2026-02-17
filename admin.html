@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="/css/admin.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- TELEGRAM WEBAPP SDK - MUST LOAD FIRST -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
     <!-- FAKE 404 PAGE (shown by default) -->
@@ -59,13 +61,11 @@
         </div>
 
         <!-- Admin Sections -->
-        <!-- Dashboard Section -->
         <div id="section-dashboard" class="admin-section active">
             <h2 class="section-title"><i class="fas fa-chart-line"></i> Statistics Dashboard</h2>
             <div id="statsContainer" class="stats-grid"></div>
         </div>
 
-        <!-- Deposits Section -->
         <div id="section-deposits" class="admin-section" style="display:none;">
             <h2 class="section-title"><i class="fas fa-download"></i> Deposit Requests</h2>
             <div class="filter-bar">
@@ -77,7 +77,6 @@
             <div id="depositsListAdmin" class="admin-list"></div>
         </div>
 
-        <!-- Withdrawals Section -->
         <div id="section-withdrawals" class="admin-section" style="display:none;">
             <h2 class="section-title"><i class="fas fa-upload"></i> Withdrawal Requests</h2>
             <div class="filter-bar">
@@ -89,7 +88,6 @@
             <div id="withdrawalsListAdmin" class="admin-list"></div>
         </div>
 
-        <!-- Users Section -->
         <div id="section-users" class="admin-section" style="display:none;">
             <h2 class="section-title"><i class="fas fa-users"></i> User Management</h2>
             <div class="search-bar">
@@ -98,7 +96,6 @@
             <div id="usersListAdmin" class="admin-list"></div>
         </div>
 
-        <!-- Payments Section -->
         <div id="section-payments" class="admin-section" style="display:none;">
             <h2 class="section-title"><i class="fas fa-credit-card"></i> Payment Methods</h2>
             <div class="payment-tabs">
@@ -109,7 +106,6 @@
             <button class="btn-add" onclick="openCreatePayment()"><i class="fas fa-plus"></i> Create Payment</button>
             <div id="paymentListAdmin" class="admin-list"></div>
 
-            <!-- Create Payment Form -->
             <div id="createPaymentForm" class="admin-form" style="display:none;">
                 <h3>Create Payment Method</h3>
                 <select id="paymentCurrencySelect" class="admin-input">
@@ -129,11 +125,9 @@
             </div>
         </div>
 
-        <!-- Game Control Section -->
         <div id="section-game" class="admin-section" style="display:none;">
             <h2 class="section-title"><i class="fas fa-gamepad"></i> Game Control</h2>
 
-            <!-- Control Toggle -->
             <div class="control-toggle">
                 <span>Game Control System</span>
                 <label class="switch">
@@ -143,7 +137,6 @@
                 <span id="controlStatus" class="control-status">OFF</span>
             </div>
 
-            <!-- Videos Management -->
             <div class="game-sub-section">
                 <h3><i class="fas fa-video"></i> Game Videos</h3>
                 <div class="video-tabs">
@@ -168,7 +161,6 @@
                 </div>
             </div>
 
-            <!-- Control Rules -->
             <div class="game-sub-section">
                 <h3><i class="fas fa-sliders"></i> Control Rules</h3>
                 <button class="btn-add" onclick="openAddRule()"><i class="fas fa-plus"></i> Add Rule</button>
@@ -209,7 +201,6 @@
             </div>
         </div>
 
-        <!-- Contacts Section -->
         <div id="section-contacts" class="admin-section" style="display:none;">
             <h2 class="section-title"><i class="fas fa-address-book"></i> Contacts</h2>
             <button class="btn-add" onclick="openCreateContact()"><i class="fas fa-plus"></i> Create Contact</button>
@@ -231,13 +222,12 @@
             </div>
         </div>
 
-        <!-- Banned Section -->
         <div id="section-banned" class="admin-section" style="display:none;">
             <h2 class="section-title"><i class="fas fa-ban"></i> Banned Users</h2>
             <div id="bannedListAdmin" class="admin-list"></div>
         </div>
 
-        <!-- Admin Modal for user details -->
+        <!-- Admin Modal -->
         <div id="adminModal" class="modal" style="display:none;">
             <div class="modal-content modal-full">
                 <div class="modal-header">
@@ -253,37 +243,88 @@
     </div>
 
     <script>
-        // Telegram WebApp Detection
+        // =============================================
+        // TELEGRAM WEBAPP ADMIN VERIFICATION
+        // =============================================
         (function() {
-            const tg = window.Telegram?.WebApp;
-            if (!tg || !tg.initDataUnsafe?.user) {
-                // Not opened from Telegram - show 404
-                document.getElementById('fake404').style.display = 'flex';
-                document.getElementById('adminPanel').style.display = 'none';
+            var ADMIN_ID = '1538232799';
+            var fake404 = document.getElementById('fake404');
+            var adminPanel = document.getElementById('adminPanel');
+
+            // Default: show 404, hide admin
+            fake404.style.display = 'flex';
+            adminPanel.style.display = 'none';
+
+            // Check if Telegram WebApp SDK is available
+            var tg = null;
+            try {
+                tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+            } catch(e) {
+                tg = null;
+            }
+
+            // Not in Telegram - show 404
+            if (!tg) {
+                console.log('Not in Telegram environment');
                 return;
             }
 
-            const userId = tg.initDataUnsafe.user.id.toString();
-            const ADMIN_ID = '1538232799';
+            // Try to get user data
+            var userData = null;
+            try {
+                userData = tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
+            } catch(e) {
+                userData = null;
+            }
 
-            if (userId !== ADMIN_ID) {
-                document.getElementById('fake404').style.display = 'flex';
-                document.getElementById('adminPanel').style.display = 'none';
+            if (!userData || !userData.id) {
+                console.log('No Telegram user data');
                 return;
             }
 
-            // Authorized admin
-            document.getElementById('fake404').style.display = 'none';
-            document.getElementById('adminPanel').style.display = 'block';
-            tg.expand();
-            tg.ready();
+            var currentUserId = userData.id.toString();
+            console.log('Telegram User ID:', currentUserId);
 
-            window.ADMIN_TG_USER_ID = userId;
+            // Check if admin
+            if (currentUserId !== ADMIN_ID) {
+                console.log('Not admin user');
+                return;
+            }
+
+            // ===== ADMIN VERIFIED =====
+            console.log('Admin verified! Loading panel...');
+
+            // Hide 404, show admin panel
+            fake404.style.display = 'none';
+            adminPanel.style.display = 'block';
+
+            // Configure Telegram WebApp
+            try {
+                tg.expand();
+                tg.ready();
+                tg.enableClosingConfirmation();
+            } catch(e) {
+                console.log('TG config error:', e);
+            }
+
+            // Set global variables
+            window.ADMIN_TG_USER_ID = currentUserId;
             window.TG = tg;
 
-            // Load admin scripts dynamically
-            const script = document.createElement('script');
-            script.src = '/js/admin.js';
+            // Set admin username display
+            var usernameDisplay = document.getElementById('adminUsername');
+            if (usernameDisplay && userData.username) {
+                usernameDisplay.textContent = '@' + userData.username;
+            }
+
+            // Load admin JS dynamically
+            var script = document.createElement('script');
+            script.src = '/js/utils.js';
+            script.onload = function() {
+                var adminScript = document.createElement('script');
+                adminScript.src = '/js/admin.js';
+                document.body.appendChild(adminScript);
+            };
             document.body.appendChild(script);
         })();
     </script>
