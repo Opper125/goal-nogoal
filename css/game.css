@@ -1,0 +1,432 @@
+/* ===== GAME AREA ===== */
+.game-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 16px;
+    position: relative;
+    z-index: 5;
+    overflow-y: auto;
+}
+
+/* ===== GAME BUTTONS ===== */
+.game-buttons {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    max-width: 400px;
+    padding: 20px 0;
+}
+
+.game-btn {
+    flex: 1;
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    background: transparent;
+    padding: 0;
+}
+
+.game-btn .btn-inner {
+    padding: 30px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    position: relative;
+    z-index: 2;
+}
+
+.game-btn .btn-icon {
+    font-size: 32px;
+    transition: all 0.3s ease;
+}
+
+.game-btn .btn-inner span {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+.game-btn .btn-edge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* ===== GOAL BUTTON ===== */
+.goal-btn {
+    clip-path: polygon(0 0, 100% 0, 85% 100%, 0 100%);
+}
+
+.goal-btn .btn-edge {
+    background: linear-gradient(135deg, #1a2e1a 0%, #0e1a0e 50%, #0a140a 100%);
+    border: 1px solid rgba(76, 175, 80, 0.15);
+}
+
+.goal-btn .btn-icon {
+    color: #4caf50;
+}
+
+.goal-btn .btn-inner span {
+    color: #81c784;
+}
+
+.goal-btn:hover .btn-edge {
+    background: linear-gradient(135deg, #1e3a1e 0%, #122212 50%, #0e1a0e 100%);
+    box-shadow: 0 0 30px rgba(76, 175, 80, 0.1);
+}
+
+.goal-btn:hover .btn-icon {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 10px rgba(76, 175, 80, 0.3));
+}
+
+.goal-btn.selected .btn-edge {
+    background: linear-gradient(135deg, #2a4a2a 0%, #1a2e1a 50%, #122212 100%);
+    border-color: rgba(76, 175, 80, 0.3);
+    box-shadow: 0 0 40px rgba(76, 175, 80, 0.15);
+}
+
+.goal-btn.selected .btn-icon {
+    transform: scale(1.2);
+    color: #66bb6a;
+    filter: drop-shadow(0 0 15px rgba(76, 175, 80, 0.4));
+}
+
+/* ===== NO GOAL BUTTON ===== */
+.nogoal-btn {
+    clip-path: polygon(15% 0, 100% 0, 100% 100%, 0 100%);
+}
+
+.nogoal-btn .btn-edge {
+    background: linear-gradient(135deg, #2e1a1a 0%, #1a0e0e 50%, #140a0a 100%);
+    border: 1px solid rgba(244, 67, 54, 0.15);
+}
+
+.nogoal-btn .btn-icon {
+    color: #f44336;
+}
+
+.nogoal-btn .btn-inner span {
+    color: #e57373;
+}
+
+.nogoal-btn:hover .btn-edge {
+    background: linear-gradient(135deg, #3a1e1e 0%, #221212 50%, #1a0e0e 100%);
+    box-shadow: 0 0 30px rgba(244, 67, 54, 0.1);
+}
+
+.nogoal-btn:hover .btn-icon {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 10px rgba(244, 67, 54, 0.3));
+}
+
+.nogoal-btn.selected .btn-edge {
+    background: linear-gradient(135deg, #4a2a2a 0%, #2e1a1a 50%, #221212 100%);
+    border-color: rgba(244, 67, 54, 0.3);
+    box-shadow: 0 0 40px rgba(244, 67, 54, 0.15);
+}
+
+.nogoal-btn.selected .btn-icon {
+    transform: scale(1.2);
+    color: #ef5350;
+    filter: drop-shadow(0 0 15px rgba(244, 67, 54, 0.4));
+}
+
+/* ===== BET SECTION ===== */
+.bet-section {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+    background: linear-gradient(180deg, rgba(20, 20, 30, 0.9), rgba(14, 14, 20, 0.95));
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    animation: fadeIn 0.3s ease;
+}
+
+.bet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.bet-choice {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+.bet-choice.goal {
+    color: #4caf50;
+}
+
+.bet-choice.nogoal {
+    color: #f44336;
+}
+
+.bet-currency {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    color: #666;
+    letter-spacing: 1px;
+}
+
+.bet-input-group {
+    margin-bottom: 14px;
+}
+
+.bet-input {
+    width: 100%;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    color: #e0e0e0;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.bet-input:focus {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.bet-input::placeholder {
+    font-size: 13px;
+    font-weight: 400;
+    color: #3a3a4a;
+}
+
+/* ===== QUICK BETS ===== */
+.quick-bets {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.quick-bet {
+    padding: 10px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    color: #888;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.quick-bet:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: #ccc;
+}
+
+.quick-bet:last-child {
+    background: rgba(244, 67, 54, 0.05);
+    border-color: rgba(244, 67, 54, 0.1);
+    color: #e57373;
+}
+
+.quick-bet:last-child:hover {
+    background: rgba(244, 67, 54, 0.1);
+    color: #ef5350;
+}
+
+/* ===== PLAY BUTTON ===== */
+.btn-play {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 14px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1e2e1e, #142214, #0e1a0e);
+    color: #81c784;
+    border: 1px solid rgba(76, 175, 80, 0.15);
+    transition: all 0.3s ease;
+}
+
+.btn-play:hover {
+    background: linear-gradient(135deg, #2a3e2a, #1e2e1e, #142214);
+    border-color: rgba(76, 175, 80, 0.25);
+    box-shadow: 0 0 30px rgba(76, 175, 80, 0.1);
+}
+
+.btn-play i {
+    margin-right: 8px;
+}
+
+/* ===== VIDEO CONTAINER ===== */
+.video-container {
+    width: 100%;
+    max-width: 400px;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    background: #000;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.video-container video {
+    width: 100%;
+    display: block;
+    border-radius: 20px;
+}
+
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+    z-index: 5;
+    animation: fadeIn 0.5s ease;
+}
+
+.result-display {
+    text-align: center;
+    animation: resultPop 0.5s ease;
+}
+
+@keyframes resultPop {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.result-display .result-icon {
+    font-size: 60px;
+    margin-bottom: 15px;
+}
+
+.result-display .result-text {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    margin-bottom: 10px;
+}
+
+.result-display .result-amount {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.result-display.win .result-icon { color: #4caf50; }
+.result-display.win .result-text { color: #66bb6a; }
+.result-display.win .result-amount { color: #81c784; }
+
+.result-display.lose .result-icon { color: #f44336; }
+.result-display.lose .result-text { color: #ef5350; }
+.result-display.lose .result-amount { color: #e57373; }
+
+.result-display .btn-continue {
+    padding: 12px 30px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #ccc;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.result-display .btn-continue:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ===== GAME LOADING ===== */
+.game-loading {
+    text-align: center;
+    padding: 40px;
+}
+
+.game-loading .spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid rgba(255, 255, 255, 0.06);
+    border-top: 3px solid #888;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.game-loading p {
+    color: #666;
+    font-size: 14px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 380px) {
+    .game-buttons {
+        gap: 12px;
+    }
+
+    .game-btn .btn-inner {
+        padding: 24px 12px;
+    }
+
+    .game-btn .btn-icon {
+        font-size: 26px;
+    }
+
+    .game-btn .btn-inner span {
+        font-size: 12px;
+    }
+
+    .bet-input {
+        font-size: 16px;
+        padding: 14px;
+    }
+
+    .quick-bets {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+    }
+
+    .quick-bet {
+        padding: 8px 6px;
+        font-size: 12px;
+    }
+}
