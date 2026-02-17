@@ -1,0 +1,300 @@
+/* ===== AUTH SCREEN ===== */
+.auth-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at center, #12121a 0%, #0a0a0f 70%);
+    z-index: 100;
+    overflow-y: auto;
+}
+
+.auth-bg-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 20% 20%, rgba(60, 60, 80, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(60, 60, 80, 0.06) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 420px;
+    padding: 30px 24px;
+    position: relative;
+    z-index: 2;
+}
+
+/* ===== AUTH LOGO ===== */
+.auth-logo {
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+.logo-circle {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1e1e2e, #14141e);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px;
+    position: relative;
+    box-shadow: 
+        0 0 30px rgba(100, 100, 120, 0.1),
+        inset 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.logo-circle img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.logo-fallback {
+    font-size: 36px;
+    display: none;
+}
+
+.logo-circle img[style*="display: none"] + .logo-fallback,
+.logo-circle img:not([src]), 
+.logo-circle img[src=""] {
+    display: none;
+}
+
+.logo-circle img[src=""] ~ .logo-fallback,
+.logo-circle img:not([src]) ~ .logo-fallback {
+    display: block;
+}
+
+.auth-title {
+    font-size: 22px;
+    letter-spacing: 4px;
+    margin-top: 5px;
+}
+
+/* ===== AUTH TABS ===== */
+.auth-tabs {
+    display: flex;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 14px;
+    padding: 4px;
+    margin-bottom: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.auth-tab {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 11px;
+    background: transparent;
+    color: #555;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.auth-tab.active {
+    background: linear-gradient(135deg, #1e1e2e, #16161e);
+    color: #ccc;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ===== AUTH FORM ===== */
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon {
+    position: absolute;
+    left: 16px;
+    color: #444;
+    font-size: 14px;
+    z-index: 2;
+    pointer-events: none;
+    transition: color 0.3s ease;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 15px 16px 15px 44px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    color: #e0e0e0;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.input-group input:focus {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.input-group input:focus ~ .input-icon,
+.input-group input:focus + .input-icon {
+    color: #888;
+}
+
+.input-group input::placeholder {
+    color: #3a3a4a;
+}
+
+/* ===== TOGGLE PASSWORD ===== */
+.toggle-pass {
+    position: absolute;
+    right: 14px;
+    background: none;
+    border: none;
+    color: #444;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 5px;
+    z-index: 2;
+    transition: color 0.2s ease;
+}
+
+.toggle-pass:hover {
+    color: #888;
+}
+
+/* ===== FIELD STATUS ===== */
+.field-status {
+    position: absolute;
+    right: 14px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    z-index: 2;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.field-status.valid {
+    color: #4caf50;
+    background: rgba(76, 175, 80, 0.08);
+}
+
+.field-status.invalid {
+    color: #f44336;
+    background: rgba(244, 67, 54, 0.08);
+}
+
+.field-status.checking {
+    color: #ffc107;
+    background: rgba(255, 193, 7, 0.08);
+}
+
+/* ===== PASSWORD RULES ===== */
+.password-rules {
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.password-rules .rule {
+    font-size: 12px;
+    color: #444;
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.3s ease;
+}
+
+.password-rules .rule i {
+    font-size: 6px;
+    transition: all 0.3s ease;
+}
+
+.password-rules .rule.met {
+    color: #4caf50;
+}
+
+.password-rules .rule.met i {
+    color: #4caf50;
+}
+
+.password-rules .rule.unmet {
+    color: #555;
+}
+
+/* ===== AUTH MESSAGE ===== */
+.auth-message {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.auth-message.success {
+    display: block;
+    background: rgba(76, 175, 80, 0.08);
+    border: 1px solid rgba(76, 175, 80, 0.15);
+    color: #4caf50;
+}
+
+.auth-message.error {
+    display: block;
+    background: rgba(244, 67, 54, 0.08);
+    border: 1px solid rgba(244, 67, 54, 0.15);
+    color: #f44336;
+}
+
+.auth-message.loading {
+    display: block;
+    background: rgba(255, 193, 7, 0.08);
+    border: 1px solid rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 380px) {
+    .auth-container {
+        padding: 20px 16px;
+    }
+
+    .auth-title {
+        font-size: 18px;
+        letter-spacing: 3px;
+    }
+
+    .logo-circle {
+        width: 75px;
+        height: 75px;
+    }
+
+    .logo-circle img {
+        width: 50px;
+        height: 50px;
+    }
+}
