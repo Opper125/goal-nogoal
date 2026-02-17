@@ -4,9 +4,8 @@
   "description": "GOAL OR NO GOAL - Football Betting Game",
   "private": true,
   "scripts": {
-    "dev": "vercel dev",
-    "build": "vercel build",
-    "deploy": "vercel --prod"
+    "start": "node api/config.js",
+    "dev": "node api/config.js"
   },
   "dependencies": {
     "node-fetch": "2.7.0",
@@ -14,6 +13,6 @@
     "crypto-js": "^4.2.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "18.x"
   }
 }
