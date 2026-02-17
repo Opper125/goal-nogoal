@@ -46,7 +46,7 @@ function showDashboard(user) {
     }
 }
 
-// Set background image URL (call from app.js)
+// Set background image URL
 function setBackgroundImage(url) {
     backgroundImageUrl = url;
     const bgEl = document.getElementById('dashboardBg');
@@ -55,7 +55,7 @@ function setBackgroundImage(url) {
     }
 }
 
-// Set logo image URL (call from app.js)
+// Set logo image URL
 function setLogoImage(url) {
     logoImageUrl = url;
     const barLogo = document.getElementById('barLogoImg');
@@ -70,7 +70,7 @@ function startPolling() {
 
     pollInterval = setInterval(async () => {
         await pollUserData();
-    }, 5000); // Poll every 5 seconds
+    }, 5000);
 }
 
 // Stop polling
@@ -96,6 +96,10 @@ async function pollUserData() {
             handleBan(result.reason);
             return;
         }
+
+        // ===== USER IS NOT BANNED =====
+        // If we previously had a ban stored locally, clear it now
+        clearBanData();
 
         if (!result.user) return;
 
@@ -175,10 +179,9 @@ async function pollUserData() {
     }
 }
 
-// Handle ban
+// Handle ban - store ban info locally
 function handleBan(reason) {
     stopPolling();
-    clearSession();
 
     // Store ban info
     localStorage.setItem('gng_banned', 'true');
@@ -193,13 +196,36 @@ function handleBan(reason) {
     document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
     banScreen.style.display = 'flex';
 
-    // Set ban cookie/storage for device ban
+    // Set ban cookie
     try {
         document.cookie = `gng_banned=true;max-age=${365 * 24 * 60 * 60};path=/`;
     } catch (e) { }
 }
 
-// Check if device is banned
+// Clear all ban data from local storage and cookies
+function clearBanData() {
+    localStorage.removeItem('gng_banned');
+    localStorage.removeItem('gng_ban_reason');
+
+    // Clear ban cookie
+    try {
+        document.cookie = 'gng_banned=;max-age=0;path=/';
+        document.cookie = 'gng_banned=false;max-age=0;path=/';
+    } catch (e) { }
+
+    // If ban screen is currently showing, hide it and show dashboard
+    const banScreen = document.getElementById('banScreen');
+    if (banScreen && banScreen.style.display !== 'none') {
+        banScreen.style.display = 'none';
+
+        // Re-show dashboard if we have a user
+        if (currentUser) {
+            showScreen('dashboardScreen');
+        }
+    }
+}
+
+// Check if device is banned (check local storage and cookies)
 function checkDeviceBan() {
     const localBan = localStorage.getItem('gng_banned');
     const cookieBan = document.cookie.includes('gng_banned=true');
@@ -211,23 +237,41 @@ function checkDeviceBan() {
     return { banned: false };
 }
 
-// Check ban from server
+// Check ban from server - THIS NOW ALSO HANDLES UNBANNING
 async function checkServerBan() {
     const userId = getUserId();
     const deviceId = getDeviceId();
-    const ip = await getIPAddress();
+    let ip = 'unknown';
+
+    try {
+        ip = await getIPAddress();
+    } catch (e) {
+        ip = 'unknown';
+    }
 
     const params = {};
     if (userId) params.userId = userId;
     if (deviceId) params.deviceId = deviceId;
-    if (ip) params.ip = ip;
+    if (ip && ip !== 'unknown') params.ip = ip;
 
-    const result = await apiGet('auth', 'check-ban', params);
+    try {
+        const result = await apiGet('auth', 'check-ban', params);
 
-    if (result.success && result.banned) {
-        handleBan(result.reason);
-        return true;
+        if (result.success) {
+            if (result.banned) {
+                // User IS banned on server
+                handleBan(result.reason);
+                return true;
+            } else {
+                // User is NOT banned on server - clear any local ban data
+                clearBanData();
+                return false;
+            }
+        }
+    } catch (err) {
+        console.error('Check ban error:', err);
     }
+
     return false;
 }
 
@@ -240,8 +284,10 @@ function logout() {
     showScreen('authScreen');
 
     // Clear form fields
-    document.getElementById('loginPhone').value = '';
-    document.getElementById('loginPassword').value = '';
+    const loginPhone = document.getElementById('loginPhone');
+    const loginPassword = document.getElementById('loginPassword');
+    if (loginPhone) loginPhone.value = '';
+    if (loginPassword) loginPassword.value = '';
 
     showToast('Logged out successfully', 'info');
 }
@@ -250,7 +296,7 @@ function logout() {
 document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') {
         if (currentUser && getUserId()) {
-            pollUserData(); // Immediate poll
+            pollUserData();
             startPolling();
         }
     } else {
