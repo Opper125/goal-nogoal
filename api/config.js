@@ -39,45 +39,69 @@ const CONFIG = {
 };
 
 async function readBin(binId) {
-  try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-      headers: {
-        'X-Master-Key': CONFIG.JSONBIN_API_KEY,
-        'X-Bin-Meta': 'false'
+  const maxRetries = 3;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+        headers: {
+          'X-Master-Key': CONFIG.JSONBIN_API_KEY,
+          'X-Bin-Meta': 'false'
+        }
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error(`readBin error for ${binId} (attempt ${attempt + 1}):`, errText);
+        if (attempt < maxRetries - 1) {
+          await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+          continue;
+        }
+        return null;
       }
-    });
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error(`readBin error for ${binId}:`, errText);
+      return await res.json();
+    } catch (err) {
+      console.error(`readBin exception (attempt ${attempt + 1}):`, err);
+      if (attempt < maxRetries - 1) {
+        await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+        continue;
+      }
       return null;
     }
-    return await res.json();
-  } catch (err) {
-    console.error('readBin exception:', err);
-    return null;
   }
+  return null;
 }
 
 async function updateBin(binId, data) {
-  try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Master-Key': CONFIG.JSONBIN_API_KEY
-      },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error(`updateBin error for ${binId}:`, errText);
+  const maxRetries = 3;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': CONFIG.JSONBIN_API_KEY
+        },
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error(`updateBin error for ${binId} (attempt ${attempt + 1}):`, errText);
+        if (attempt < maxRetries - 1) {
+          await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+          continue;
+        }
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error(`updateBin exception (attempt ${attempt + 1}):`, err);
+      if (attempt < maxRetries - 1) {
+        await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+        continue;
+      }
       return false;
     }
-    return true;
-  } catch (err) {
-    console.error('updateBin exception:', err);
-    return false;
   }
+  return false;
 }
 
 async function checkGmail(email) {
