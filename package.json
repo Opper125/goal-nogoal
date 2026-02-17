@@ -1,0 +1,19 @@
+{
+  "name": "goal-or-nogoal",
+  "version": "1.0.0",
+  "description": "GOAL OR NO GOAL - Football Betting Game",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "node-fetch": "2.7.0",
+    "uuid": "^9.0.0",
+    "crypto-js": "^4.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
