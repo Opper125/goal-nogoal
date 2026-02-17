@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>404 - Page Not Found</title>
+    <link rel="stylesheet" href="/css/admin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+    <!-- FAKE 404 PAGE (shown by default) -->
+    <div id="fake404" class="fake-404">
+        <h1>404</h1>
+        <p>Page Not Found</p>
+        <p class="sub">The page you are looking for does not exist or has been moved.</p>
+    </div>
+
+    <!-- ADMIN PANEL (hidden by default) -->
+    <div id="adminPanel" class="admin-panel" style="display:none;">
+        <!-- Admin Top Bar -->
+        <div class="admin-bar">
+            <div class="admin-bar-left">
+                <i class="fas fa-shield-halved"></i>
+                <span>ADMIN PANEL</span>
+            </div>
+            <div class="admin-bar-right">
+                <span id="adminUsername">@OPPER101</span>
+                <span class="admin-badge">ADMIN</span>
+            </div>
+        </div>
+
+        <!-- Admin Navigation -->
+        <div class="admin-nav">
+            <button class="admin-nav-btn active" onclick="showAdminSection('dashboard')">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </button>
+            <button class="admin-nav-btn" onclick="showAdminSection('deposits')">
+                <i class="fas fa-download"></i> Deposits
+            </button>
+            <button class="admin-nav-btn" onclick="showAdminSection('withdrawals')">
+                <i class="fas fa-upload"></i> Withdrawals
+            </button>
+            <button class="admin-nav-btn" onclick="showAdminSection('users')">
+                <i class="fas fa-users"></i> Users
+            </button>
+            <button class="admin-nav-btn" onclick="showAdminSection('payments')">
+                <i class="fas fa-credit-card"></i> Payments
+            </button>
+            <button class="admin-nav-btn" onclick="showAdminSection('game')">
+                <i class="fas fa-gamepad"></i> Game Control
+            </button>
+            <button class="admin-nav-btn" onclick="showAdminSection('contacts')">
+                <i class="fas fa-address-book"></i> Contacts
+            </button>
+            <button class="admin-nav-btn" onclick="showAdminSection('banned')">
+                <i class="fas fa-ban"></i> Banned
+            </button>
+        </div>
+
+        <!-- Admin Sections -->
+        <!-- Dashboard Section -->
+        <div id="section-dashboard" class="admin-section active">
+            <h2 class="section-title"><i class="fas fa-chart-line"></i> Statistics Dashboard</h2>
+            <div id="statsContainer" class="stats-grid"></div>
+        </div>
+
+        <!-- Deposits Section -->
+        <div id="section-deposits" class="admin-section" style="display:none;">
+            <h2 class="section-title"><i class="fas fa-download"></i> Deposit Requests</h2>
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="filterDeposits('pending')">Pending</button>
+                <button class="filter-btn" onclick="filterDeposits('approved')">Approved</button>
+                <button class="filter-btn" onclick="filterDeposits('rejected')">Rejected</button>
+                <button class="filter-btn" onclick="filterDeposits('all')">All</button>
+            </div>
+            <div id="depositsListAdmin" class="admin-list"></div>
+        </div>
+
+        <!-- Withdrawals Section -->
+        <div id="section-withdrawals" class="admin-section" style="display:none;">
+            <h2 class="section-title"><i class="fas fa-upload"></i> Withdrawal Requests</h2>
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="filterWithdrawals('pending')">Pending</button>
+                <button class="filter-btn" onclick="filterWithdrawals('approved')">Approved</button>
+                <button class="filter-btn" onclick="filterWithdrawals('rejected')">Rejected</button>
+                <button class="filter-btn" onclick="filterWithdrawals('all')">All</button>
+            </div>
+            <div id="withdrawalsListAdmin" class="admin-list"></div>
+        </div>
+
+        <!-- Users Section -->
+        <div id="section-users" class="admin-section" style="display:none;">
+            <h2 class="section-title"><i class="fas fa-users"></i> User Management</h2>
+            <div class="search-bar">
+                <input type="text" id="userSearchInput" placeholder="Search by username, phone, email..." oninput="searchUsers()">
+            </div>
+            <div id="usersListAdmin" class="admin-list"></div>
+        </div>
+
+        <!-- Payments Section -->
+        <div id="section-payments" class="admin-section" style="display:none;">
+            <h2 class="section-title"><i class="fas fa-credit-card"></i> Payment Methods</h2>
+            <div class="payment-tabs">
+                <button class="pay-tab active" onclick="switchPayTab('MMK')">MMK</button>
+                <button class="pay-tab" onclick="switchPayTab('USD')">USD</button>
+                <button class="pay-tab" onclick="switchPayTab('CNY')">CNY</button>
+            </div>
+            <button class="btn-add" onclick="openCreatePayment()"><i class="fas fa-plus"></i> Create Payment</button>
+            <div id="paymentListAdmin" class="admin-list"></div>
+
+            <!-- Create Payment Form -->
+            <div id="createPaymentForm" class="admin-form" style="display:none;">
+                <h3>Create Payment Method</h3>
+                <select id="paymentCurrencySelect" class="admin-input">
+                    <option value="MMK">MMK</option>
+                    <option value="USD">USD</option>
+                    <option value="CNY">CNY</option>
+                </select>
+                <input type="text" id="paymentName" placeholder="Payment Name" class="admin-input">
+                <input type="text" id="paymentAddress" placeholder="Payment Address" class="admin-input">
+                <input type="text" id="paymentNote" placeholder="Note" class="admin-input">
+                <input type="text" id="paymentIconUrl" placeholder="Icon Image URL" class="admin-input">
+                <input type="text" id="paymentQrUrl" placeholder="QR Code Image URL" class="admin-input">
+                <div class="form-buttons">
+                    <button class="btn-primary" onclick="createPayment()">Create</button>
+                    <button class="btn-cancel" onclick="closeCreatePayment()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Control Section -->
+        <div id="section-game" class="admin-section" style="display:none;">
+            <h2 class="section-title"><i class="fas fa-gamepad"></i> Game Control</h2>
+
+            <!-- Control Toggle -->
+            <div class="control-toggle">
+                <span>Game Control System</span>
+                <label class="switch">
+                    <input type="checkbox" id="controlToggle" onchange="toggleGameControl()">
+                    <span class="slider"></span>
+                </label>
+                <span id="controlStatus" class="control-status">OFF</span>
+            </div>
+
+            <!-- Videos Management -->
+            <div class="game-sub-section">
+                <h3><i class="fas fa-video"></i> Game Videos</h3>
+                <div class="video-tabs">
+                    <button class="vid-tab active" onclick="switchVideoTab('goal')">Goal Videos</button>
+                    <button class="vid-tab" onclick="switchVideoTab('nogoal')">No Goal Videos</button>
+                </div>
+                <button class="btn-add" onclick="openAddVideo()"><i class="fas fa-plus"></i> Add Video</button>
+                <div id="videoListAdmin" class="admin-list"></div>
+
+                <div id="addVideoForm" class="admin-form" style="display:none;">
+                    <h3>Add Video</h3>
+                    <select id="videoTypeSelect" class="admin-input">
+                        <option value="goal">Goal</option>
+                        <option value="nogoal">No Goal</option>
+                    </select>
+                    <input type="text" id="videoName" placeholder="Video Name" class="admin-input">
+                    <input type="text" id="videoUrl" placeholder="Video URL" class="admin-input">
+                    <div class="form-buttons">
+                        <button class="btn-primary" onclick="addVideo()">Add Video</button>
+                        <button class="btn-cancel" onclick="closeAddVideo()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Control Rules -->
+            <div class="game-sub-section">
+                <h3><i class="fas fa-sliders"></i> Control Rules</h3>
+                <button class="btn-add" onclick="openAddRule()"><i class="fas fa-plus"></i> Add Rule</button>
+                <div id="rulesListAdmin" class="admin-list"></div>
+
+                <div id="addRuleForm" class="admin-form" style="display:none;">
+                    <h3>Add Control Rule</h3>
+                    <select id="ruleType" class="admin-input">
+                        <option value="exact">Exact Amount</option>
+                        <option value="range">Amount Range</option>
+                    </select>
+                    <select id="ruleCurrency" class="admin-input">
+                        <option value="MMK">MMK</option>
+                        <option value="USD">USD</option>
+                        <option value="CNY">CNY</option>
+                    </select>
+                    <select id="ruleBetChoice" class="admin-input">
+                        <option value="any">Any (Goal & No Goal)</option>
+                        <option value="goal">Goal Only</option>
+                        <option value="nogoal">No Goal Only</option>
+                    </select>
+                    <div id="exactAmountField">
+                        <input type="number" id="ruleExactAmount" placeholder="Exact Bet Amount" class="admin-input">
+                    </div>
+                    <div id="rangeAmountFields" style="display:none;">
+                        <input type="number" id="ruleMinAmount" placeholder="Min Amount" class="admin-input">
+                        <input type="number" id="ruleMaxAmount" placeholder="Max Amount" class="admin-input">
+                    </div>
+                    <select id="ruleAction" class="admin-input">
+                        <option value="lose">Force Lose</option>
+                        <option value="win">Force Win</option>
+                    </select>
+                    <div class="form-buttons">
+                        <button class="btn-primary" onclick="addControlRule()">Add Rule</button>
+                        <button class="btn-cancel" onclick="closeAddRule()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contacts Section -->
+        <div id="section-contacts" class="admin-section" style="display:none;">
+            <h2 class="section-title"><i class="fas fa-address-book"></i> Contacts</h2>
+            <button class="btn-add" onclick="openCreateContact()"><i class="fas fa-plus"></i> Create Contact</button>
+            <div id="contactsListAdmin" class="admin-list"></div>
+
+            <div id="createContactForm" class="admin-form" style="display:none;">
+                <h3>Create Contact</h3>
+                <input type="text" id="contactName" placeholder="Contact Name" class="admin-input">
+                <input type="text" id="contactImgUrl" placeholder="Image URL" class="admin-input">
+                <select id="contactType" class="admin-input">
+                    <option value="link">Link (clickable)</option>
+                    <option value="address">Address (copyable)</option>
+                </select>
+                <input type="text" id="contactLinkOrAddress" placeholder="Link or Address" class="admin-input">
+                <div class="form-buttons">
+                    <button class="btn-primary" onclick="createContact()">Create</button>
+                    <button class="btn-cancel" onclick="closeCreateContact()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Banned Section -->
+        <div id="section-banned" class="admin-section" style="display:none;">
+            <h2 class="section-title"><i class="fas fa-ban"></i> Banned Users</h2>
+            <div id="bannedListAdmin" class="admin-list"></div>
+        </div>
+
+        <!-- Admin Modal for user details -->
+        <div id="adminModal" class="modal" style="display:none;">
+            <div class="modal-content modal-full">
+                <div class="modal-header">
+                    <h3 id="adminModalTitle">Details</h3>
+                    <button class="modal-close" onclick="closeAdminModal()">&times;</button>
+                </div>
+                <div class="modal-body" id="adminModalBody"></div>
+            </div>
+        </div>
+
+        <!-- Admin Toast -->
+        <div id="adminToast" class="toast-container"></div>
+    </div>
+
+    <script>
+        // Telegram WebApp Detection
+        (function() {
+            const tg = window.Telegram?.WebApp;
+            if (!tg || !tg.initDataUnsafe?.user) {
+                // Not opened from Telegram - show 404
+                document.getElementById('fake404').style.display = 'flex';
+                document.getElementById('adminPanel').style.display = 'none';
+                return;
+            }
+
+            const userId = tg.initDataUnsafe.user.id.toString();
+            const ADMIN_ID = '1538232799';
+
+            if (userId !== ADMIN_ID) {
+                document.getElementById('fake404').style.display = 'flex';
+                document.getElementById('adminPanel').style.display = 'none';
+                return;
+            }
+
+            // Authorized admin
+            document.getElementById('fake404').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            tg.expand();
+            tg.ready();
+
+            window.ADMIN_TG_USER_ID = userId;
+            window.TG = tg;
+
+            // Load admin scripts dynamically
+            const script = document.createElement('script');
+            script.src = '/js/admin.js';
+            document.body.appendChild(script);
+        })();
+    </script>
+</body>
+</html>
