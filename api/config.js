@@ -9,12 +9,14 @@ const CONFIG = {
     PAYMENTS: process.env.BIN_PAYMENTS || '69946d6743b1c97be985ecfe',
     GAME_VIDEOS: process.env.BIN_GAME_VIDEOS || '69946d8243b1c97be985ed53',
     GAME_CONTROLS: process.env.BIN_GAME_CONTROLS || '69946d9943b1c97be985ed8b',
-    CONTACTS: process.env.BIN_CONTACTS || '69946dabd0ea881f40c14eba'
+    CONTACTS: process.env.BIN_CONTACTS || '69946dabd0ea881f40c14eba',
+    AGENTS: process.env.BIN_AGENTS || '6995715ad0ea881f40c33b22'
   },
   TELEGRAM: {
     BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || '8532065930:AAHyQgfa-YQn3L4jK17mXf5XM_1YHbwmM_M',
     ADMIN_ID: process.env.TELEGRAM_ADMIN_ID || '1538232799',
-    ADMIN_USERNAME: '@OPPER101'
+    ADMIN_USERNAME: '@OPPER101',
+    AGENT_BOT_TOKEN: process.env.AGENT_BOT_TOKEN || '7872785824:AAEy4VZkXDaUE3-3Bzo2kq_Ava_QZALXYBo'
   },
   GMAIL_API: {
     KEY: process.env.GMAIL_API_KEY || 'e9dca4286emsh4d7cdfebdedad21p12269cjsn0581391f6ed3',
@@ -181,7 +183,7 @@ function validatePassword(password) {
   if (password.length < 6) return { valid: false, message: 'Password must be at least 6 characters' };
   if (!/[A-Z]/.test(password)) return { valid: false, message: 'Password must contain at least one uppercase letter' };
   if (!/[0-9]/.test(password)) return { valid: false, message: 'Password must contain at least one number' };
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) return { valid: false, message: 'Password must contain at least one special character (@#$&% etc.)' };
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) return { valid: false, message: 'Password must contain at least one special character' };
   return { valid: true };
 }
 
