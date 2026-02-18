@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>404 - Page Not Found</title>
+    <link rel="stylesheet" href="/css/admin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        .agent-balance-bar {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .agent-bal-card {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+            border: 1px solid rgba(255,255,255,0.06);
+            text-align: center;
+        }
+        .agent-bal-card .abl-curr {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 9px;
+            color: #555;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .agent-bal-card .abl-amount {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: #ccc;
+        }
+        .deposit-to-user-form {
+            padding: 16px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            margin-top: 12px;
+        }
+        .deposit-to-user-form h4 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 12px;
+            color: #aaa;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+        .wd-request-item {
+            padding: 16px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.04);
+            margin-bottom: 10px;
+        }
+        .wd-request-item .wd-user {
+            font-weight: 700;
+            color: #ccc;
+            font-size: 15px;
+            margin-bottom: 6px;
+        }
+        .wd-request-item .wd-info {
+            font-size: 13px;
+            color: #777;
+            line-height: 1.6;
+        }
+        .wd-request-item .wd-info span {
+            color: #aaa;
+        }
+        .wd-request-item .wd-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- FAKE 404 -->
+    <div id="fake404" class="fake-404">
+        <h1>404</h1>
+        <p>Page Not Found</p>
+        <p class="sub">The page you are looking for does not exist or has been moved.</p>
+    </div>
+
+    <!-- AGENT PANEL -->
+    <div id="agentPanel" class="admin-panel" style="display:none;">
+        <!-- Agent Top Bar -->
+        <div class="admin-bar">
+            <div class="admin-bar-left">
+                <i class="fas fa-user-tie"></i>
+                <span>AGENT PANEL</span>
+            </div>
+            <div class="admin-bar-right">
+                <span id="agentUsername">Agent</span>
+                <span class="admin-badge" style="background:linear-gradient(135deg,rgba(33,150,243,0.1),rgba(25,118,210,0.05));border-color:rgba(33,150,243,0.2);color:#42a5f5;">AGENT</span>
+            </div>
+        </div>
+
+        <!-- Agent Balance Bar -->
+        <div class="agent-balance-bar" id="agentBalanceBar">
+            <div class="agent-bal-card">
+                <div class="abl-curr">MMK</div>
+                <div class="abl-amount" id="agentBalMMK">0</div>
+            </div>
+            <div class="agent-bal-card">
+                <div class="abl-curr">USD</div>
+                <div class="abl-amount" id="agentBalUSD">0</div>
+            </div>
+            <div class="agent-bal-card">
+                <div class="abl-curr">CNY</div>
+                <div class="abl-amount" id="agentBalCNY">0</div>
+            </div>
+        </div>
+
+        <!-- Agent Navigation -->
+        <div class="admin-nav">
+            <button class="admin-nav-btn active" onclick="showAgentSection('users')">
+                <i class="fas fa-users"></i> Users
+            </button>
+            <button class="admin-nav-btn" onclick="showAgentSection('withdrawals')">
+                <i class="fas fa-money-bill-transfer"></i> Withdrawals
+            </button>
+            <button class="admin-nav-btn" onclick="showAgentSection('history')">
+                <i class="fas fa-clock-rotate-left"></i> History
+            </button>
+        </div>
+
+        <!-- Users Section -->
+        <div id="agent-section-users" class="admin-section active">
+            <h2 class="section-title"><i class="fas fa-users"></i> Users - Deposit</h2>
+            <div class="search-bar">
+                <input type="text" id="agentUserSearch" placeholder="Search by username, phone, email..." oninput="agentSearchUsers()">
+            </div>
+            <div id="agentUsersList" class="admin-list"></div>
+        </div>
+
+        <!-- Withdrawals Section -->
+        <div id="agent-section-withdrawals" class="admin-section" style="display:none;">
+            <h2 class="section-title"><i class="fas fa-money-bill-transfer"></i> Withdrawal Requests</h2>
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="agentFilterWd('pending')">Pending</button>
+                <button class="filter-btn" onclick="agentFilterWd('approved')">Approved</button>
+                <button class="filter-btn" onclick="agentFilterWd('rejected')">Rejected</button>
+                <button class="filter-btn" onclick="agentFilterWd('all')">All</button>
+            </div>
+            <div id="agentWdList" class="admin-list"></div>
+        </div>
+
+        <!-- History Section -->
+        <div id="agent-section-history" class="admin-section" style="display:none;">
+            <h2 class="section-title"><i class="fas fa-clock-rotate-left"></i> Transaction History</h2>
+            <div id="agentHistoryList" class="admin-list"></div>
+        </div>
+
+        <!-- Agent Modal -->
+        <div id="agentModal" class="modal" style="display:none;">
+            <div class="modal-content modal-full">
+                <div class="modal-header">
+                    <h3 id="agentModalTitle">Details</h3>
+                    <button class="modal-close" onclick="closeAgentModal()">&times;</button>
+                </div>
+                <div class="modal-body" id="agentModalBody"></div>
+            </div>
+        </div>
+
+        <!-- Agent Toast -->
+        <div id="agentToast" class="toast-container"></div>
+    </div>
+
+    <script>
+        (function() {
+            var fake404 = document.getElementById('fake404');
+            var agentPanel = document.getElementById('agentPanel');
+
+            fake404.style.display = 'flex';
+            agentPanel.style.display = 'none';
+
+            var tg = null;
+            try {
+                tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+            } catch(e) { tg = null; }
+
+            if (!tg) { return; }
+
+            var userData = null;
+            try {
+                userData = tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
+            } catch(e) { userData = null; }
+
+            if (!userData || !userData.id) { return; }
+
+            var currentTgId = userData.id.toString();
+
+            // Store TG info globally
+            window.AGENT_TG_USER_ID = currentTgId;
+            window.AGENT_TG = tg;
+            window.AGENT_TG_USERNAME = userData.username || '';
+
+            // Load utils first, then agent panel JS
+            var s1 = document.createElement('script');
+            s1.src = '/js/utils.js';
+            s1.onload = function() {
+                var s2 = document.createElement('script');
+                s2.src = '/js/agentpanel.js';
+                s2.onload = function() {
+                    // agentpanel.js will handle verification and auto-login
+                    initAgentPanel(currentTgId, fake404, agentPanel, tg, userData);
+                };
+                document.body.appendChild(s2);
+            };
+            document.body.appendChild(s1);
+        })();
+    </script>
+</body>
+</html>
