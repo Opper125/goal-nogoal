@@ -3,6 +3,8 @@ const {
   isWithin24Hours, corsHeaders, sendSuccess, sendError, checkTurnover, getWithdrawLimit, calculateVipLevel
 } = require('./config');
 
+const BIN_AGENTS = process.env.BIN_AGENTS || '6995715ad0ea881f40c33b22';
+
 module.exports = async (req, res) => {
   Object.entries(corsHeaders()).forEach(([k, v]) => res.setHeader(k, v));
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -36,17 +38,11 @@ async function handleDeposit(req, res) {
     return sendError(res, 'All fields are required');
   }
 
-  if (!['MMK', 'USD', 'CNY'].includes(currency)) {
-    return sendError(res, 'Invalid currency');
-  }
+  if (!['MMK', 'USD', 'CNY'].includes(currency)) return sendError(res, 'Invalid currency');
 
   const limits = CONFIG.LIMITS[currency];
-  if (amount < limits.DEPOSIT_MIN) {
-    return sendError(res, `Minimum deposit is ${limits.DEPOSIT_MIN} ${currency}`);
-  }
-  if (amount > limits.DEPOSIT_MAX) {
-    return sendError(res, `Maximum deposit is ${limits.DEPOSIT_MAX} ${currency}`);
-  }
+  if (amount < limits.DEPOSIT_MIN) return sendError(res, `Minimum deposit is ${limits.DEPOSIT_MIN} ${currency}`);
+  if (amount > limits.DEPOSIT_MAX) return sendError(res, `Maximum deposit is ${limits.DEPOSIT_MAX} ${currency}`);
 
   if (!transactionId || transactionId.length !== 6) {
     return sendError(res, 'Transaction ID must be exactly 6 digits');
@@ -60,9 +56,7 @@ async function handleDeposit(req, res) {
   if (userIdx === -1) return sendError(res, 'User not found', 404);
 
   const user = users[userIdx];
-  if (user.bannedStatus?.isBanned) {
-    return sendError(res, 'Account is banned', 403);
-  }
+  if (user.bannedStatus?.isBanned) return sendError(res, 'Account is banned', 403);
 
   const depositsData = await readBin(CONFIG.BINS.DEPOSITS);
   if (!depositsData) return sendError(res, 'Database error', 500);
@@ -77,8 +71,6 @@ async function handleDeposit(req, res) {
     const approvedDup = recentDuplicates.filter(d => d.status === 'approved');
 
     if (!users[userIdx].fraudAttempts) users[userIdx].fraudAttempts = [];
-
-    const recentFraud = users[userIdx].fraudAttempts.filter(f => isWithin24Hours(f.timestamp));
 
     if (approvedDup.length > 0) {
       users[userIdx].fraudAttempts.push({
@@ -103,7 +95,7 @@ async function handleDeposit(req, res) {
       }
 
       await updateBin(CONFIG.BINS.USERS, { users });
-      return sendError(res, 'This transaction ID has already been approved. Warning: Repeated attempts will result in account ban.');
+      return sendError(res, 'This transaction ID has already been approved.');
     }
 
     return sendError(res, 'This transaction ID has already been submitted within the last 24 hours');
@@ -143,7 +135,7 @@ async function handleDeposit(req, res) {
 
   return sendSuccess(res, {
     deposit: deposit,
-    message: 'Deposit request submitted successfully. Waiting for admin approval.'
+    message: 'Deposit request submitted successfully.'
   });
 }
 
@@ -152,21 +144,12 @@ async function handleWithdraw(req, res) {
   for await (const chunk of req) body += chunk;
   const { userId, amount, currency } = JSON.parse(body);
 
-  if (!userId || !amount || !currency) {
-    return sendError(res, 'All fields are required');
-  }
-
-  if (!['MMK', 'USD', 'CNY'].includes(currency)) {
-    return sendError(res, 'Invalid currency');
-  }
+  if (!userId || !amount || !currency) return sendError(res, 'All fields are required');
+  if (!['MMK', 'USD', 'CNY'].includes(currency)) return sendError(res, 'Invalid currency');
 
   const limits = CONFIG.LIMITS[currency];
-  if (amount < limits.WITHDRAW_MIN) {
-    return sendError(res, `Minimum withdrawal is ${limits.WITHDRAW_MIN} ${currency}`);
-  }
-  if (amount > limits.WITHDRAW_MAX) {
-    return sendError(res, `Maximum withdrawal is ${limits.WITHDRAW_MAX} ${currency}`);
-  }
+  if (amount < limits.WITHDRAW_MIN) return sendError(res, `Minimum withdrawal is ${limits.WITHDRAW_MIN} ${currency}`);
+  if (amount > limits.WITHDRAW_MAX) return sendError(res, `Maximum withdrawal is ${limits.WITHDRAW_MAX} ${currency}`);
 
   const usersData = await readBin(CONFIG.BINS.USERS);
   if (!usersData) return sendError(res, 'Database error', 500);
@@ -176,36 +159,35 @@ async function handleWithdraw(req, res) {
   if (userIdx === -1) return sendError(res, 'User not found', 404);
 
   const user = users[userIdx];
-
-  if (user.bannedStatus?.isBanned) {
-    return sendError(res, 'Account is banned', 403);
-  }
-
-  if (user.balance[currency] < amount) {
-    return sendError(res, `Insufficient balance. You have ${user.balance[currency]} ${currency}`);
-  }
+  if (user.bannedStatus?.isBanned) return sendError(res, 'Account is banned', 403);
+  if (user.balance[currency] < amount) return sendError(res, `Insufficient balance. You have ${user.balance[currency]} ${currency}`);
 
   const turnover = checkTurnover(user, currency);
-  if (!turnover.met) {
-    return sendError(res, `Turnover requirement not met. You need ${turnover.remaining} more ${currency} in turnover.`);
-  }
+  if (!turnover.met) return sendError(res, `Turnover requirement not met. Need ${turnover.remaining} more ${currency}.`);
 
   if (user.pendingClaimBet && user.pendingClaimBet.currency === currency) {
-    return sendError(res, `You must place a bet of at least ${user.pendingClaimBet.minBet} ${currency} from your claimed reward before withdrawing.`);
+    return sendError(res, `Must place bet of at least ${user.pendingClaimBet.minBet} ${currency} before withdrawing.`);
   }
 
   const vipLevel = calculateVipLevel(user);
   const dailyLimit = getWithdrawLimit(vipLevel);
 
   const today = new Date().toDateString();
-  const lastWd = user.lastWithdrawDate;
   let todayCount = user.todayWithdrawCount || 0;
-  if (!lastWd || new Date(lastWd).toDateString() !== today) {
+  if (!user.lastWithdrawDate || new Date(user.lastWithdrawDate).toDateString() !== today) {
     todayCount = 0;
   }
 
   if (todayCount >= dailyLimit) {
-    return sendError(res, `Daily withdrawal limit reached (${dailyLimit} times per day for ${vipLevel} level)`);
+    return sendError(res, `Daily withdrawal limit reached (${dailyLimit} for ${vipLevel})`);
+  }
+
+  // Check if user was deposited by an agent
+  const depositedByAgent = user.depositedByAgent?.[currency];
+  let targetAgentId = null;
+
+  if (depositedByAgent && depositedByAgent.agentId) {
+    targetAgentId = depositedByAgent.agentId;
   }
 
   const withdrawalsData = await readBin(CONFIG.BINS.WITHDRAWALS);
@@ -221,6 +203,8 @@ async function handleWithdraw(req, res) {
     currency: currency,
     status: 'pending',
     adminNote: '',
+    agentId: targetAgentId || null,
+    routedToAgent: !!targetAgentId,
     createdAt: getTimestamp(),
     updatedAt: getTimestamp()
   };
@@ -238,6 +222,7 @@ async function handleWithdraw(req, res) {
     amount: amount,
     currency: currency,
     status: 'pending',
+    routedToAgent: !!targetAgentId,
     timestamp: withdrawal.createdAt
   });
 
@@ -247,14 +232,15 @@ async function handleWithdraw(req, res) {
   return sendSuccess(res, {
     withdrawal: withdrawal,
     newBalance: users[userIdx].balance[currency],
-    message: 'Withdrawal request submitted successfully.'
+    message: targetAgentId
+      ? 'Withdrawal submitted to your agent for processing.'
+      : 'Withdrawal request submitted successfully.'
   });
 }
 
 async function handleDepositHistory(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const userId = url.searchParams.get('userId');
-
   if (!userId) return sendError(res, 'userId required');
 
   const depositsData = await readBin(CONFIG.BINS.DEPOSITS);
@@ -267,7 +253,6 @@ async function handleDepositHistory(req, res) {
 async function handleWithdrawHistory(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const userId = url.searchParams.get('userId');
-
   if (!userId) return sendError(res, 'userId required');
 
   const withdrawalsData = await readBin(CONFIG.BINS.WITHDRAWALS);
@@ -349,17 +334,8 @@ async function handleClaimReward(req, res) {
 
   const user = users[userIdx];
 
-  if (user.vipLevel !== 'VVIP_KING') {
-    return sendError(res, 'Only VVIP KING users can claim rewards');
-  }
-
-  if (user.claimedRewards && user.claimedRewards.includes(currency)) {
-    return sendError(res, `You have already claimed a ${currency} reward`);
-  }
-
-  if (user.claimedRewards && user.claimedRewards.length > 0) {
-    return sendError(res, 'You can only claim one reward. You have already claimed a reward.');
-  }
+  if (user.vipLevel !== 'VVIP_KING') return sendError(res, 'Only VVIP KING can claim rewards');
+  if (user.claimedRewards && user.claimedRewards.length > 0) return sendError(res, 'Already claimed a reward');
 
   const rewardAmount = CONFIG.VIP.CLAIM_REWARDS[currency];
   const minBet = CONFIG.VIP.CLAIM_MIN_BET[currency];
@@ -380,7 +356,7 @@ async function handleClaimReward(req, res) {
   await updateBin(CONFIG.BINS.USERS, { users });
 
   return sendSuccess(res, {
-    message: `Claimed ${rewardAmount} ${currency} reward! You must place a bet of at least ${minBet} ${currency} before you can withdraw.`,
+    message: `Claimed ${rewardAmount} ${currency}! Must bet at least ${minBet} ${currency} before withdrawing.`,
     newBalance: users[userIdx].balance[currency],
     pendingClaimBet: users[userIdx].pendingClaimBet
   });
